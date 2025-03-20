@@ -1,8 +1,8 @@
 package emulator
 
 import (
+	"github.com/jsutcodes/chip8-goemu/internal/cpu"
 	"github.com/jsutcodes/chip8-goemu/internal/memory"
-	"github.com/justcodes/chip8-goemu/internal/cpu"
 )
 
 var chip8Fontset = [80]byte{
@@ -33,7 +33,7 @@ type Emulator struct {
 func NewEmulator() *Emulator {
 	return &Emulator{
 		RAM: memory.NewMemory(),
-		CPU: cpu.CPU{}.NewCPU(),
+		CPU: cpu.NewCPU(),
 	}
 }
 
