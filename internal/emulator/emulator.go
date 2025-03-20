@@ -3,6 +3,9 @@ package emulator
 import (
 	"github.com/jsutcodes/chip8-goemu/internal/cpu"
 	"github.com/jsutcodes/chip8-goemu/internal/memory"
+
+	"github.com/jsutcodes/chip8-goemu/internal/display"
+	"github.com/jsutcodes/chip8-goemu/internal/input"
 )
 
 var chip8Fontset = [80]byte{
@@ -26,8 +29,10 @@ var chip8Fontset = [80]byte{
 
 type Emulator struct {
 	// Add fields as needed
-	RAM *memory.Memory
-	CPU *cpu.CPU
+	RAM     *memory.Memory
+	CPU     *cpu.CPU
+	Input   *input.Input
+	Display *display.Display
 }
 
 func NewEmulator() *Emulator {
@@ -40,8 +45,13 @@ func NewEmulator() *Emulator {
 func (emu *Emulator) Start() {
 	// Implement the start logic
 
-	// Load the fontset into memory
+	// Load the fontset into memory (0 -80)
 	for i, b := range chip8Fontset {
 		emu.RAM.WriteByte(i, b)
 	}
+}
+
+func (emu *Emulator) LoadROM(path string) {
+	// Implement the load ROM logic
+
 }
