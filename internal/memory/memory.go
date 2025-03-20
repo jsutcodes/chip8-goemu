@@ -1,5 +1,7 @@
 package memory
 
+import "fmt"
+
 // 4kb of RAM
 const MemorySize = 4096
 
@@ -8,18 +10,26 @@ type Memory struct {
 	bytes [MemorySize]byte
 }
 
-func (m *Memory) ReadByte(address int) byte {
-	if address < 0 || address >= MemorySize {
-		panic("address out of bounds")
+func (m *Memory) ReadByte(address uint16) (byte, error) {
+	if address >= MemorySize {
+		return 0, fmt.Errorf("address out of bounds")
 	}
-	return m.bytes[address]
+	return m.bytes[address], nil
 }
 
-func (m *Memory) WriteByte(address int, value byte) {
+func (m *Memory) WriteByte(address uint16, value byte) {
 	if address < 0 || address >= MemorySize {
 		panic("address out of bounds")
 	}
 	m.bytes[address] = value
+}
+func (m *Memory) LoadROM(data []byte) {
+	if len(data) > MemorySize-0x200 {
+		panic("ROM too large")
+	}
+	for i, b := range data {
+		m.bytes[i+0x200] = b
+	}
 }
 
 func NewMemory() *Memory {

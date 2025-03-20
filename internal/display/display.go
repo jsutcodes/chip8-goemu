@@ -41,7 +41,7 @@ func (d *Display) Render() {
 
 func NewDisplay() *Display {
 	return &Display{
-		PC: 0x200, // Program counter starts at 0x200
+		pixels: &[width * height]bool{},
 	}
 }
 

@@ -9,5 +9,6 @@ import (
 func main() {
 	fmt.Println("Starting CHIP-8 Emulator")
 	emu := emulator.NewEmulator()
-	emu.Start()
+	emu.LoadROM("roms/pong.rom")
+	emu.Run()
 }

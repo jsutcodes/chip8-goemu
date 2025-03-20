@@ -4,6 +4,37 @@ import (
 	"github.com/veandco/go-sdl2/sdl"
 )
 
+// Keypad represents the CHIP-8 keypad which has a 4x4 grid of keys:
+//
+//	chip8  vs. sdl
+//
+// ========|========
+// 1 2 3 C | 1 2 3 4
+// 4 5 6 D | q w e r
+// 7 8 9 E | a s d f
+// A 0 B F | z x c v
+//
+// The Keypad struct contains a boolean array to keep track of the state (pressed or not pressed) of each key.
+// The keys are mapped to the following SDL keys:
+//
+// CHIP-8 Key | SDL Key
+// -----------|--------
+// 1          | 1
+// 2          | 2
+// 3          | 3
+// C          | 4
+// 4          | Q
+// 5          | W
+// 6          | E
+// D          | R
+// 7          | A
+// 8          | S
+// 9          | D
+// E          | F
+// A          | Z
+// 0          | X
+// B          | C
+// F          | V
 type Keypad struct {
 	keys [16]bool
 }
