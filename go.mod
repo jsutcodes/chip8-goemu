@@ -1,3 +1,3 @@
-module jsutcodes.com/chip8-goemu
+module github.com/jsutcodes/chip8-goemu
 
 go 1.22.2

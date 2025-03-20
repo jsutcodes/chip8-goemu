@@ -1,13 +1,13 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/jsutcodes/chip8-goemu/internal/emulator"
+)
 
 func main() {
-	fmt.Println("hello world")
-}
-
-func startEmulator() {
-	// Create a new RAM object
-	ram := RAM{}.initMemory()
-	fmt.Println(ram)
+	fmt.Println("Starting CHIP-8 Emulator")
+	emu := emulator.NewEmulator()
+	emu.Start()
 }
