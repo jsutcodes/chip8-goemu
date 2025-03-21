@@ -1,8 +1,9 @@
 package emulator
 
 import (
-	"log"
+	"fmt"
 	"os"
+	"time"
 
 	"github.com/jsutcodes/chip8-goemu/internal/cpu"
 	"github.com/jsutcodes/chip8-goemu/internal/memory"
@@ -31,6 +32,8 @@ var chip8Fontset = [80]byte{
 	0xF0, 0x80, 0xF0, 0x80, 0x80, // F
 }
 
+const CLOCK_SPEED = 700
+
 var delayTimer byte
 var soundTimer byte
 
@@ -41,6 +44,7 @@ type Emulator struct {
 	Input   *input.Keypad
 	Display *display.Display
 	Timer   *timer.Timer
+	running bool
 }
 
 func (emu *Emulator) Test() {
@@ -59,30 +63,46 @@ func NewEmulator() *Emulator {
 		Input:   keypad,
 		Display: display,
 		Timer:   timer.NewTimer(),
+		running: false,
 	}
 }
 
 func (emu *Emulator) Run() {
-	// Load the fontset into memory (0 -80)
+	// Load the fontset into memory (0 - 80)
 	fmt.Println("Running Emulator")
 	for i, b := range chip8Fontset {
 		emu.RAM.WriteByte(uint16(i), b)
 	}
 
-	for {
-		emu.CPU.Cycle(false, emu.RAM)
-		emu.Timer.Update()
+	ticker := time.NewTicker(time.Second / CLOCK_SPEED)
+
+	for emu.running {
+		select {
+		case <-ticker.C:
+			emu.Step()
+		}
 	}
+}
+
+func (emu *Emulator) Step() {
+	// Run the emulator
+	emu.CPU.Cycle(true, emu.RAM)
+	emu.Timer.Update()
+	emu.Display.Render()
 }
 
 func (emu *Emulator) LoadROM(path string) {
 	// Implement the load ROM logic
 	// convert string to file and load into bytes
 	// pass the bytes to the LoadROM method in memory
+	fmt.Println("Loading ROM: ", path)
+
 	data, err := os.ReadFile(path)
+	//fmt.Print(data)
 	if err != nil {
-		log.Fatalf("Failed to read ROM: %v", err)
+		fmt.Printf("Failed to read ROM: %v", err)
 	}
 	emu.RAM.LoadROM(data)
-}
 
+	emu.running = true
+}

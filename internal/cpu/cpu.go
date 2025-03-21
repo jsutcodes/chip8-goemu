@@ -102,6 +102,7 @@ func (c *CPU) decodeAndExecute(opcode uint16) {
 			break
 		default:
 			fmt.Printf("Unknown opcode: 0x%X\n", opcode)
+			break
 		}
 	case 0x1000:
 		// Jump to address NNN
@@ -404,6 +405,6 @@ func (c *CPU) Cycle(verbose bool, RAM *memory.Memory) {
 	if verbose {
 		printState(c)
 	}
-
 	c.decodeAndExecute(opcode)
+	fmt.Printf("Exiting Decode and Execute")
 }

@@ -9,6 +9,6 @@ import (
 func main() {
 	fmt.Println("Starting CHIP-8 Emulator")
 	emu := emulator.NewEmulator()
-	// emu.LoadROM("roms/IBMLogo.ch8")
-	// emu.Run()
+	emu.LoadROM("roms/IBMLogo.ch8")
+	emu.Run()
 }

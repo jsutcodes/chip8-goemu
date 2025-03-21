@@ -12,18 +12,19 @@ type Memory struct {
 
 func (m *Memory) ReadByte(address uint16) (byte, error) {
 	if address >= MemorySize {
-		return 0, fmt.Errorf("address out of bounds")
+		panic("address out of bounds")
 	}
 	return m.bytes[address], nil
 }
 
 func (m *Memory) WriteByte(address uint16, value byte) {
-	if address < 0 || address >= MemorySize {
+	if address >= MemorySize {
 		panic("address out of bounds")
 	}
 	m.bytes[address] = value
 }
 func (m *Memory) LoadROM(data []byte) {
+	fmt.Printf("ROM size: %d\n", len(data))
 	if len(data) > MemorySize-0x200 {
 		panic("ROM too large")
 	}

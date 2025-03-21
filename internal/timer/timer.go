@@ -23,7 +23,7 @@ func (t *Timer) Update() {
 
 func NewTimer() *Timer {
 	return &Timer{
-		delay: 60, //?
-		sound: 60,
+		delay: 0, //?
+		sound: 0,
 	}
 }
