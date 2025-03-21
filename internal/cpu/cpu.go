@@ -1,7 +1,10 @@
 package cpu
 
 import (
+	"math/rand"
+
 	"github.com/jsutcodes/chip8-goemu/internal/display"
+	"github.com/jsutcodes/chip8-goemu/internal/input"
 	"github.com/jsutcodes/chip8-goemu/internal/memory"
 	"honnef.co/go/tools/printf"
 )
@@ -16,6 +19,7 @@ type CPU struct {
 	ST      byte       // Sound timer
 	RAM     *memory.Memory
 	Display *display.Display
+	Input   *input.Keypad
 }
 
 // Opcode Table:
@@ -57,11 +61,12 @@ type CPU struct {
 // | 0xFX55 | Store V0 to VX in memory starting at address I                              |
 // | 0xFX65 | Fill V0 to VX with values from memory starting at address I                 |
 
-func NewCPU(RAM *memory.Memory, Display *display.Display) *CPU {
+func NewCPU(RAM *memory.Memory, Display *display.Display, Input *input.Keypad) *CPU {
 	return &CPU{
 		PC:      0x200, // Program counter starts at 0x200
 		RAM:     RAM,
 		Display: Display,
+		Input:   Input,
 	}
 }
 
@@ -182,18 +187,51 @@ func (c *CPU) decodeAndExecute(opcode uint16) {
 			break
 		case 0x0004:
 			// Add VY to VX
+			reg1 := (opcode & 0x0F00) >> 8 // get X
+			reg2 := (opcode & 0x00F0) >> 4 // get Y
+			sum := uint16(c.V[reg1]) + uint16(c.V[reg2])
+			c.V[0xF] = 0 // reset carry flag
+			if sum > 0xFF {
+				c.V[0xF] = 1 // set carry flag
+			}
+			c.V[reg1] = byte(sum)
+			c.PC += 2 // next instruction
 			break
 		case 0x0005:
 			// Subtract VY from VX
+			reg1 := (opcode & 0x0F00) >> 8 // get X
+			reg2 := (opcode & 0x00F0) >> 4 // get Y
+			c.V[0xF] = 0                   // reset borrow flag
+			if c.V[reg1] > c.V[reg2] {
+				c.V[0xF] = 1 // set borrow flag
+			}
+			c.V[reg1] -= c.V[reg2]
+			c.PC += 2 // next instruction
 			break
 		case 0x0006:
 			// Shift VX right by one
+			reg := (opcode & 0x0F00) >> 8 // get X
+			c.V[0xF] = c.V[reg] & 0x1     // store least significant bit in VF
+			c.V[reg] >>= 1
+			c.PC += 2 // next instruction
 			break
 		case 0x0007:
 			// Set VX to VY minus VX
+			reg1 := (opcode & 0x0F00) >> 8 // get X
+			reg2 := (opcode & 0x00F0) >> 4 // get Y
+			c.V[0xF] = 0                   // reset borrow flag
+			if c.V[reg2] > c.V[reg1] {
+				c.V[0xF] = 1 // set borrow flag
+			}
+			c.V[reg1] = c.V[reg2] - c.V[reg1]
+			c.PC += 2 // next instruction
 			break
 		case 0x000E:
 			// Shift VX left by one
+			reg := (opcode & 0x0F00) >> 8     // get X
+			c.V[0xF] = (c.V[reg] & 0x80) >> 7 // store most significant bit in VF
+			c.V[reg] <<= 1
+			c.PC += 2 // next instruction
 			break
 
 		default:
@@ -202,60 +240,138 @@ func (c *CPU) decodeAndExecute(opcode uint16) {
 		}
 	case 0x9000:
 		// Skip next instruction if VX doesn't equal VY
+		reg1 := (opcode & 0x0F00) >> 8 // get X
+		reg2 := (opcode & 0x00F0) >> 4 // get Y
+		c.PC += 2                      // next instruction
+		if c.V[reg1] != c.V[reg2] {
+			c.PC += 2 // skip this instruction
+		}
 		break
 	case 0xA000:
 		// Set I to the address NNN
+		c.I = opcode & 0x0FFF
+		c.PC += 2 // next instruction
 		break
 	case 0xB000:
 		// Jump to the address NNN plus V0
+		c.PC = (opcode & 0x0FFF) + uint16(c.V[0])
 		break
 	case 0xC000:
 		// Set VX to a random number and NN
+		val := opcode & 0x00FF        // get lower 8 bits
+		reg := (opcode & 0x0F00) >> 8 // get X
+		c.V[reg] = byte(rand.Intn(256)) & byte(val)
+		c.PC += 2 // next instruction
 		break
 	case 0xD000:
 		// Draw a sprite at coordinate (VX, VY) that has a width of 8 pixels and a height of N pixels
+		x := c.V[(opcode&0x0F00)>>8]
+		y := c.V[(opcode&0x00F0)>>4]
+		height := opcode & 0x000F
+		c.V[0xF] = 0
+		for yline := uint16(0); yline < height; yline++ {
+			pixel, _ := c.RAM.ReadByte(c.I + yline)
+			for xline := uint16(0); xline < 8; xline++ {
+				if (pixel & (0x80 >> xline)) != 0 {
+					if c.Display.IsPixelOn(int(uint16(x)+xline), int(uint16(y)+yline)) { // there is a check for 1 here, not sure if this is correct
+						c.V[0xF] = 1
+					}
+				}
+			}
+		}
+		c.PC += 2 // next instruction
 		break
 	case 0xE000:
 		switch opcode & 0x00FF {
 		case 0x009E:
 			// Skip next instruction if the key stored in VX is pressed
+			reg := (opcode & 0x0F00) >> 8 // get X
+			if c.Input.IsKeyPressed(c.V[reg]) {
+				c.PC += 4 // skip next instruction
+			} else {
+				c.PC += 2 // next instruction
+			}
 			break
 		case 0x00A1:
 			// Skip next instruction if the key stored in VX isn't pressed
+			reg := (opcode & 0x0F00) >> 8 // get X
+			if !c.Input.IsKeyPressed(c.V[reg]) {
+				c.PC += 4 // skip next instruction
+			} else {
+				c.PC += 2 // next instruction
+			}
 			break
 
 		default:
 			printf.Printf("Unknown opcode: 0x%X\n", opcode)
 			break
 		}
+		break
 	case 0xF000:
 		switch opcode & 0x00FF {
 		case 0x0007:
 			// Set VX to the value of the delay timer
+			reg := (opcode & 0x0F00) >> 8 // get X
+			c.V[reg] = c.DT
+			c.PC += 2 // next instruction
 			break
 		case 0x000A:
 			// Wait for a key press and store the result in VX
+			reg := (opcode & 0x0F00) >> 8 // get X
+			key := c.Input.WaitForKeyPress()
+			c.V[reg] = key
+			c.PC += 2 // next instruction
 			break
 		case 0x0015:
 			// Set the delay timer to VX
+			reg := (opcode & 0x0F00) >> 8 // get X
+			c.DT = c.V[reg]
+			c.PC += 2 // next instruction
 			break
 		case 0x0018:
 			// Set the sound timer to VX
+			reg := (opcode & 0x0F00) >> 8 // get X
+			c.ST = c.V[reg]
+			c.PC += 2 // next instruction
 			break
 		case 0x001E:
 			// Add VX to I
+			reg := (opcode & 0x0F00) >> 8 // get X
+			c.I += uint16(c.V[reg])
+			c.PC += 2 // next instruction
 			break
 		case 0x0029:
 			// Set I to the location of the sprite for the character in VX
+			reg := (opcode & 0x0F00) >> 8 // get X
+			c.I = uint16(c.V[reg]) * 5    // each character is 5 bytes long
+			c.PC += 2                     // next instruction
 			break
 		case 0x0033:
 			// Store the binary-coded decimal representation of VX at the addresses I, I+1, and I+2
+			reg := (opcode & 0x0F00) >> 8 // get X
+			value := c.V[reg]
+			c.RAM.WriteByte(c.I, value/100)
+			c.RAM.WriteByte(c.I+1, (value/10)%10)
+			c.RAM.WriteByte(c.I+2, (value%100)%10)
+			c.PC += 2 // next instruction
 			break
 		case 0x0055:
 			// Store V0 to VX in memory starting at address I
+			reg := (opcode & 0x0F00) >> 8 // get X
+			for i := uint16(0); i <= reg; i++ {
+				c.RAM.WriteByte(c.I+i, c.V[i])
+			}
+			c.PC += 2 // next instruction
 			break
 		case 0x0065:
 			// Fill V0 to VX with values from memory starting at address I
+			reg := (opcode & 0x0F00) >> 8 // get X
+			for i := uint16(0); i <= reg; i++ {
+				value, _ := c.RAM.ReadByte(c.I + i)
+				c.V[i] = value
+			}
+			c.I = c.I + reg + 1
+			c.PC += 2 // next instruction
 			break
 
 		default:

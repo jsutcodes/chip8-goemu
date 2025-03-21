@@ -26,6 +26,13 @@ func (d *Display) SetPixel(x, y int, on bool) {
 	}
 }
 
+func (d *Display) IsPixelOn(x, y int) bool {
+	if x >= 0 && x < width && y >= 0 && y < height {
+		return d.pixels[y*width+x]
+	}
+	return false
+}
+
 func (d *Display) Render() {
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {

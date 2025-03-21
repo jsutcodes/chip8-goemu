@@ -56,6 +56,16 @@ func (k *Keypad) SetKeyPressed(key uint8, pressed bool) {
 	}
 }
 
+func (k *Keypad) WaitForKeyPress() byte {
+	for {
+		for i, pressed := range k.keys {
+			if pressed {
+				return byte(i)
+			}
+		}
+	}
+}
+
 func (k *Keypad) HandleEvent(event sdl.Event) {
 	switch e := event.(type) {
 	case *sdl.KeyboardEvent:
