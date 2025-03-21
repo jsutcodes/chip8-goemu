@@ -64,6 +64,7 @@ func NewEmulator() *Emulator {
 
 func (emu *Emulator) Run() {
 	// Load the fontset into memory (0 -80)
+	fmt.Println("Running Emulator")
 	for i, b := range chip8Fontset {
 		emu.RAM.WriteByte(uint16(i), b)
 	}
@@ -84,3 +85,4 @@ func (emu *Emulator) LoadROM(path string) {
 	}
 	emu.RAM.LoadROM(data)
 }
+
