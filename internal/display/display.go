@@ -41,7 +41,7 @@ func (d *Display) Render() *[2048]bool {
 			if d.IsPixelOn(x, y) {
 				fmt.Print("█")
 			} else {
-				fmt.Print("x")
+				fmt.Print(" ")
 			}
 		}
 		fmt.Println()

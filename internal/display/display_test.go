@@ -1,8 +1,6 @@
 package display
 
 import (
-	"fmt"
-	"strings"
 	"testing"
 )
 
@@ -49,47 +47,20 @@ func TestIsPixelOn(t *testing.T) {
 	}
 }
 
-// Test failing: need to fix render
 func TestRender(t *testing.T) {
 	display := NewDisplay()
 	display.SetPixel(0, 0, true)
 	display.SetPixel(1, 0, true)
 	display.SetPixel(2, 0, true)
 
-	expectedOutput := "███" + fmt.Sprintf("%*s", width-3, "") + "\n" + fmt.Sprintf("%*s\n", width, "")
-	for y := 1; y < height; y++ {
-		expectedOutput += fmt.Sprintf("%*s\n", width, "")
-	}
+	expectedPixels := [2048]bool{}
+	expectedPixels[0] = true
+	expectedPixels[1] = true
+	expectedPixels[2] = true
 
-	outputStr := ""
-	for y := 0; y < height; y++ {
-		for x := 0; x < width; x++ {
-			if display.IsPixelOn(x, y) {
-				outputStr += "█"
-			} else {
-				outputStr += " "
-			}
-		}
-		outputStr += "\n"
-	}
+	actualPixels := display.Render()
 
-	if outputStr != expectedOutput {
-		t.Errorf("Expected array:\n%v\nGot array:\n%v", display.pixels, getPixelsArray(outputStr))
+	if *actualPixels != expectedPixels {
+		t.Errorf("Expected array:\n%v\nGot array:\n%v", expectedPixels, *actualPixels)
 	}
-}
-
-func getPixelsArray(outputStr string) *[2048]bool {
-	lines := strings.Split(outputStr, "\n")
-	pixels := make([]bool, height*width)
-	for y, line := range lines {
-		if y >= len(lines)-1 {
-			break
-		}
-		for x, char := range line {
-			pixels[y*width+x] = char == '█'
-		}
-	}
-	var pixelsArray [2048]bool
-	copy(pixelsArray[:], pixels)
-	return &pixelsArray
 }
