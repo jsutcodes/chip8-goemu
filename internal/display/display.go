@@ -27,23 +27,27 @@ func (d *Display) SetPixel(x, y int, on bool) {
 }
 
 func (d *Display) IsPixelOn(x, y int) bool {
+
 	if x >= 0 && x < width && y >= 0 && y < height {
-		return d.pixels[y*width+x]
+		index := x + y*64%2048
+		return d.pixels[index]
 	}
 	return false
 }
 
-func (d *Display) Render() {
+func (d *Display) Render() *[2048]bool {
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
-			if d.pixels[y*width+x] {
+			if d.IsPixelOn(x, y) {
 				fmt.Print("█")
 			} else {
-				fmt.Print(" ")
+				fmt.Print("x")
 			}
 		}
 		fmt.Println()
 	}
+
+	return d.pixels
 }
 
 func NewDisplay() *Display {

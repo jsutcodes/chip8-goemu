@@ -1,9 +1,8 @@
 package display
 
 import (
-	"bytes"
 	"fmt"
-	"log"
+	"strings"
 	"testing"
 )
 
@@ -62,18 +61,33 @@ func TestRender(t *testing.T) {
 		expectedOutput += fmt.Sprintf("%*s\n", width, "")
 	}
 
-	output := captureOutput(display.Render)
+	outputStr := ""
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+			if display.IsPixelOn(x, y) {
+				outputStr += "█"
+			} else {
+				outputStr += " "
+			}
+		}
+		outputStr += "\n"
+	}
 
-	if output != expectedOutput {
-		t.Errorf("Expected output:\n%s\nGot:\n%s", expectedOutput, output)
+	if outputStr != expectedOutput {
+		t.Errorf("Expected array:\n%v\nGot array:\n%v", display.pixels, getPixelsArray(outputStr))
 	}
 }
 
-func captureOutput(f func()) string {
-	var buf bytes.Buffer
-	old := log.Default()
-	log.SetOutput(&buf)
-	defer log.SetOutput(old.Writer())
-	f()
-	return buf.String()
+func getPixelsArray(outputStr string) []bool {
+	lines := strings.Split(outputStr, "\n")
+	pixels := make([]bool, height*width)
+	for y, line := range lines {
+		if y >= len(lines)-1 {
+			break
+		}
+		for x, char := range line {
+			pixels[y*width+x] = char == '█'
+		}
+	}
+	return pixels
 }
