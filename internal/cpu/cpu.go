@@ -1,72 +1,77 @@
 package cpu
 
 import (
+	"github.com/jsutcodes/chip8-goemu/internal/display"
 	"github.com/jsutcodes/chip8-goemu/internal/memory"
 	"honnef.co/go/tools/printf"
 )
 
 type CPU struct {
-	V   [16]byte // General purpose registers (V0 to VF)
-	I   uint16   // Index register
-	PC  uint16   // Program counter
-	SP  byte     // Stack pointer
-	DT  byte     // Delay timer
-	ST  byte     // Sound timer
-	RAM *memory.Memory
+	V       [16]byte   // General purpose registers (V0 to VF)
+	I       uint16     // Index register
+	PC      uint16     // Program counter
+	SP      byte       // Stack pointer
+	Stack   [16]uint16 // Stack
+	DT      byte       // Delay timer
+	ST      byte       // Sound timer
+	RAM     *memory.Memory
+	Display *display.Display
 }
 
-// var opcodes := []uint16{
-// 	0xNNN, // Call RCA 1802 program at address NNN
-// 	0x00E0, // Clear the display
-// 	0x00EE, // Return from a subroutine
-// 	0x1NNN, // Jump to address NNN
-// 	0x2NNN, // Call subroutine at NNN
-// 	0x3XNN, // Skip next instruction if VX equals NN
-// 	0x4XNN, // Skip next instruction if VX doesn't equal NN
-// 	0x5XY0, // Skip next instruction if VX equals VY
-// 	0x6XNN, // Set VX to NN
-// 	0x7XNN, // Add NN to VX
-// 	0x8XY0, // Set VX to the value of VY
-// 	0x8XY1, // Set VX to VX OR VY
-// 	0x8XY2, // Set VX to VX AND VY
-// 	0x8XY3, // Set VX to VX XOR VY
-// 	0x8XY4, // Add VY to VX
-// 	0x8XY5, // Subtract VY from VX
-// 	0x8XY6, // Shift VX right by one
-// 	0x8XY7, // Set VX to VY minus VX
-// 	0x8XYE, // Shift VX left by one
-// 	0x9XY0, // Skip next instruction if VX doesn't equal VY
-// 	0xANNN, // Set I to the address NNN
-// 	0xBNNN, // Jump to the address NNN plus V0
-// 	0xCXNN, // Set VX to a random number and NN
-// 	0xDXYN, // Draw a sprite at coordinate (VX, VY) that has a width of 8 pixels and a height of N pixels
-// 	0xEX9E, // Skip next instruction if the key stored in VX is pressed
-// 	0xEXA1, // Skip next instruction if the key stored in VX isn't pressed
-// 	0xFX07, // Set VX to the value of the delay timer
-// 	0xFX0A, // Wait for a key press and store the result in VX
-// 	0xFX15, // Set the delay timer to VX
-// 	0xFX18, // Set the sound timer to VX
-// 	0xFX1E, // Add VX to I
-// 	0xFX29, // Set I to the location of the sprite for the character in VX
-// 	0xFX33, // Store the binary-coded decimal representation of VX at the addresses I, I+1, and I+2
-// 	0xFX55, // Store V0 to VX in memory starting at address I
-// 	0xFX65, // Fill V0 to VX with values from memory starting at address I
-// }
+// Opcode Table:
+// | Opcode | Description                                                                 |
+// |--------|-----------------------------------------------------------------------------|
+// | 0xNNN  | Call RCA 1802 program at address NNN                                        |
+// | 0x00E0 | Clear the display                                                           |
+// | 0x00EE | Return from a subroutine                                                    |
+// | 0x1NNN | Jump to address NNN                                                         |
+// | 0x2NNN | Call subroutine at NNN                                                      |
+// | 0x3XNN | Skip next instruction if VX equals NN                                       |
+// | 0x4XNN | Skip next instruction if VX doesn't equal NN                                |
+// | 0x5XY0 | Skip next instruction if VX equals VY                                       |
+// | 0x6XNN | Set VX to NN                                                                |
+// | 0x7XNN | Add NN to VX                                                                |
+// | 0x8XY0 | Set VX to the value of VY                                                   |
+// | 0x8XY1 | Set VX to VX OR VY                                                          |
+// | 0x8XY2 | Set VX to VX AND VY                                                         |
+// | 0x8XY3 | Set VX to VX XOR VY                                                         |
+// | 0x8XY4 | Add VY to VX                                                                |
+// | 0x8XY5 | Subtract VY from VX                                                         |
+// | 0x8XY6 | Shift VX right by one                                                       |
+// | 0x8XY7 | Set VX to VY minus VX                                                       |
+// | 0x8XYE | Shift VX left by one                                                        |
+// | 0x9XY0 | Skip next instruction if VX doesn't equal VY                                |
+// | 0xANNN | Set I to the address NNN                                                    |
+// | 0xBNNN | Jump to the address NNN plus V0                                             |
+// | 0xCXNN | Set VX to a random number and NN                                            |
+// | 0xDXYN | Draw a sprite at coordinate (VX, VY) that has a width of 8 pixels and a height of N pixels |
+// | 0xEX9E | Skip next instruction if the key stored in VX is pressed                    |
+// | 0xEXA1 | Skip next instruction if the key stored in VX isn't pressed                 |
+// | 0xFX07 | Set VX to the value of the delay timer                                      |
+// | 0xFX0A | Wait for a key press and store the result in VX                             |
+// | 0xFX15 | Set the delay timer to VX                                                   |
+// | 0xFX18 | Set the sound timer to VX                                                   |
+// | 0xFX1E | Add VX to I                                                                 |
+// | 0xFX29 | Set I to the location of the sprite for the character in VX                 |
+// | 0xFX33 | Store the binary-coded decimal representation of VX at the addresses I, I+1, and I+2 |
+// | 0xFX55 | Store V0 to VX in memory starting at address I                              |
+// | 0xFX65 | Fill V0 to VX with values from memory starting at address I                 |
 
-func NewCPU(RAM *memory.Memory) *CPU {
+func NewCPU(RAM *memory.Memory, Display *display.Display) *CPU {
 	return &CPU{
-		PC:  0x200, // Program counter starts at 0x200
-		RAM: RAM,
+		PC:      0x200, // Program counter starts at 0x200
+		RAM:     RAM,
+		Display: Display,
 	}
 }
 
-func (c *CPU) fetch(RAM *memory.Memory) uint16 {
-	byte1, _ := RAM.ReadByte(c.PC)
+func (c *CPU) fetch() uint16 {
+	byte1, _ := c.RAM.ReadByte(c.PC)
 	// if err1 != nil {
 	// 	// handle error
 	// 	return 0
 	// }
-	byte2, _ := RAM.ReadByte(c.PC + 1)
+	byte2, _ := c.RAM.ReadByte(c.PC + 1)
 	// if err2 != nil {
 	// 	// handle error
 	// 	return 0
@@ -74,13 +79,200 @@ func (c *CPU) fetch(RAM *memory.Memory) uint16 {
 	return uint16(byte1)<<8 | uint16(byte2)
 }
 
-func (c *CPU) decode(opcode uint16) {
+func (c *CPU) decodeAndExecute(opcode uint16) {
 	// Decode opcode
+	nibble := opcode & 0xF000 // get the top 4 bits
+
+	switch nibble {
+	case 0x0000:
+		switch opcode {
+		case 0x00E0:
+			c.Display.Clear()
+			break
+		case 0x00EE:
+			// Return from a subroutine
+			c.SP--
+			c.PC = c.Stack[c.SP]
+			c.PC += 2
+			break
+		default:
+			printf.Printf("Unknown opcode: 0x%X\n", opcode)
+			break
+		}
+	case 0x1000:
+		// Jump to address NNN
+		c.PC = opcode & 0x0FFF
+		break
+	case 0x2000:
+		// Call subroutine at NNN
+		c.Stack[c.SP] = c.PC
+		c.SP++
+		c.PC = opcode & 0x0FFF
+		break
+	case 0x3000:
+		// Skip next instruction if VX equals NN
+		val := opcode & 0x00FF        // get lower 8 bits
+		reg := (opcode & 0x0F00) >> 8 // get X
+		c.PC += 2                     // next instruction
+		if c.V[reg] == byte(val) {
+			c.PC += 2 // skip this instruction
+		}
+		break
+	case 0x4000:
+		// Skip next instruction if VX doesn't equal NN
+		val := opcode & 0x00FF        // get lower 8 bits
+		reg := (opcode & 0x0F00) >> 8 // get X
+		c.PC += 2                     // next instruction
+		if c.V[reg] != byte(val) {
+			c.PC += 2 // skip this instruction
+		}
+		break
+	case 0x5000:
+		// Skip next instruction if VX equals VY
+		reg1 := (opcode & 0x0F00) >> 8 // get X
+		reg2 := (opcode & 0x00F0) >> 4 // get Y
+		c.PC += 2                      // next instruction
+		if c.V[reg1] == c.V[reg2] {
+			c.PC += 2 // skip this instruction
+		}
+		break
+	case 0x6000:
+		// Set VX to NN
+		val := opcode & 0x00FF        // get lower 8 bits
+		reg := (opcode & 0x0F00) >> 8 // get X
+		c.V[reg] = byte(val)
+		c.PC += 2 // next instruction
+		break
+	case 0x7000:
+		// Add NN to VX
+		val := opcode & 0x00FF        // get lower 8 bits
+		reg := (opcode & 0x0F00) >> 8 // get X
+		c.V[reg] += byte(val)
+		c.PC += 2 // next instruction
+		break
+	case 0x8000:
+		switch opcode & 0x000F {
+		case 0x0000:
+			// Set VX to the value of VY
+			reg1 := (opcode & 0x0F00) >> 8 // get X
+			reg2 := (opcode & 0x00F0) >> 4 // get Y
+			c.V[reg1] = c.V[reg2]
+			c.PC += 2 // next instruction
+			break
+		case 0x0001:
+			// Set VX to VX OR VY
+			reg1 := (opcode & 0x0F00) >> 8 // get X
+			reg2 := (opcode & 0x00F0) >> 4 // get Y
+			c.V[reg1] |= c.V[reg2]
+			c.PC += 2 // next instruction
+			break
+		case 0x0002:
+			// Set VX to VX AND VY
+			reg1 := (opcode & 0x0F00) >> 8 // get X
+			reg2 := (opcode & 0x00F0) >> 4 // get Y
+			c.V[reg1] &= c.V[reg2]
+			c.PC += 2 // next instruction
+			break
+		case 0x0003:
+			// Set VX to VX XOR VY
+			reg1 := (opcode & 0x0F00) >> 8 // get X
+			reg2 := (opcode & 0x00F0) >> 4 // get Y
+			c.V[reg1] ^= c.V[reg2]
+			c.PC += 2 // next instruction
+			break
+		case 0x0004:
+			// Add VY to VX
+			break
+		case 0x0005:
+			// Subtract VY from VX
+			break
+		case 0x0006:
+			// Shift VX right by one
+			break
+		case 0x0007:
+			// Set VX to VY minus VX
+			break
+		case 0x000E:
+			// Shift VX left by one
+			break
+
+		default:
+			printf.Printf("Unknown opcode: 0x%X\n", opcode)
+			break
+		}
+	case 0x9000:
+		// Skip next instruction if VX doesn't equal VY
+		break
+	case 0xA000:
+		// Set I to the address NNN
+		break
+	case 0xB000:
+		// Jump to the address NNN plus V0
+		break
+	case 0xC000:
+		// Set VX to a random number and NN
+		break
+	case 0xD000:
+		// Draw a sprite at coordinate (VX, VY) that has a width of 8 pixels and a height of N pixels
+		break
+	case 0xE000:
+		switch opcode & 0x00FF {
+		case 0x009E:
+			// Skip next instruction if the key stored in VX is pressed
+			break
+		case 0x00A1:
+			// Skip next instruction if the key stored in VX isn't pressed
+			break
+
+		default:
+			printf.Printf("Unknown opcode: 0x%X\n", opcode)
+			break
+		}
+	case 0xF000:
+		switch opcode & 0x00FF {
+		case 0x0007:
+			// Set VX to the value of the delay timer
+			break
+		case 0x000A:
+			// Wait for a key press and store the result in VX
+			break
+		case 0x0015:
+			// Set the delay timer to VX
+			break
+		case 0x0018:
+			// Set the sound timer to VX
+			break
+		case 0x001E:
+			// Add VX to I
+			break
+		case 0x0029:
+			// Set I to the location of the sprite for the character in VX
+			break
+		case 0x0033:
+			// Store the binary-coded decimal representation of VX at the addresses I, I+1, and I+2
+			break
+		case 0x0055:
+			// Store V0 to VX in memory starting at address I
+			break
+		case 0x0065:
+			// Fill V0 to VX with values from memory starting at address I
+			break
+
+		default:
+			printf.Printf("Unknown opcode: 0x%X\n", opcode)
+			break
+		}
+
+	default:
+		printf.Printf("Unknown opcode: 0x%X\n", opcode)
+	}
+
+	// timer update
 }
 
-func (c *CPU) execute() {
-	// Execute opcode
-}
+// func (c *CPU) execute() {
+// 	// Execute opcode
+// }
 
 func printState(c *CPU) {
 	printf.Printf("PC: 0x%X\n", c.PC)
@@ -90,15 +282,13 @@ func printState(c *CPU) {
 	printf.Printf("ST: 0x%X\n", c.ST)
 }
 
-func (c *CPU) Step(verbose bool, RAM *memory.Memory) {
+func (c *CPU) Cycle(verbose bool, RAM *memory.Memory) {
 
-	opcode := c.fetch(RAM)
-
+	opcode := c.fetch()
+	printf.Printf("Opcode: 0x%X\n", opcode)
 	if verbose {
 		printState(c)
-		printf.Printf("Opcode: 0x%X\n", c.fetch())
 	}
 
-	c.decode(opcode)
-	c.execute()
+	c.decodeAndExecute(opcode)
 }

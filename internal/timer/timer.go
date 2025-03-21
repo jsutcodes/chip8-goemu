@@ -22,5 +22,8 @@ func (t *Timer) Update() {
 }
 
 func NewTimer() *Timer {
-	return &Timer{}
+	return &Timer{
+		delay: 60, //?
+		sound: 60,
+	}
 }

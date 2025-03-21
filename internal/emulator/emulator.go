@@ -45,21 +45,25 @@ type Emulator struct {
 
 func NewEmulator() *Emulator {
 	ram := memory.NewMemory()
+	display := display.NewDisplay()
 	return &Emulator{
 		RAM:     ram,
-		CPU:     cpu.NewCPU(ram),
+		CPU:     cpu.NewCPU(ram, display),
 		Input:   input.NewKeypad(),
-		Display: display.NewDisplay(),
+		Display: display,
 		Timer:   timer.NewTimer(),
 	}
 }
 
 func (emu *Emulator) Run() {
-	// Implement the start logic
-
 	// Load the fontset into memory (0 -80)
 	for i, b := range chip8Fontset {
 		emu.RAM.WriteByte(uint16(i), b)
+	}
+
+	for {
+		emu.CPU.Cycle(false, emu.RAM)
+		emu.Timer.Update()
 	}
 }
 
