@@ -78,7 +78,7 @@ func TestRender(t *testing.T) {
 	}
 }
 
-func getPixelsArray(outputStr string) []bool {
+func getPixelsArray(outputStr string) *[2048]bool {
 	lines := strings.Split(outputStr, "\n")
 	pixels := make([]bool, height*width)
 	for y, line := range lines {
@@ -89,5 +89,7 @@ func getPixelsArray(outputStr string) []bool {
 			pixels[y*width+x] = char == '█'
 		}
 	}
-	return pixels
+	var pixelsArray [2048]bool
+	copy(pixelsArray[:], pixels)
+	return &pixelsArray
 }
