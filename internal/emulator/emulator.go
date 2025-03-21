@@ -74,11 +74,14 @@ func (emu *Emulator) Run() {
 		emu.RAM.WriteByte(uint16(i), b)
 	}
 
+	emu.RAM.PrintMemoryToFile("memory.dump")
+
 	ticker := time.NewTicker(time.Second / CLOCK_SPEED)
 
 	for emu.running {
 		select {
 		case <-ticker.C:
+			fmt.Printf("Running")
 			emu.Step()
 		}
 	}
@@ -86,7 +89,7 @@ func (emu *Emulator) Run() {
 
 func (emu *Emulator) Step() {
 	// Run the emulator
-	emu.CPU.Cycle(true, emu.RAM)
+	emu.CPU.Cycle(false, emu.RAM)
 	emu.Timer.Update()
 	emu.Display.Render()
 }
