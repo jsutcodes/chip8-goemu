@@ -4,10 +4,26 @@ import (
 	"fmt"
 	"math/rand"
 
+	"os"
+
 	"github.com/jsutcodes/chip8-goemu/internal/display"
 	"github.com/jsutcodes/chip8-goemu/internal/input"
 	"github.com/jsutcodes/chip8-goemu/internal/memory"
 )
+
+var logFile *os.File
+
+func init() {
+	var err error
+	logFile, err = os.Create("cpu.out")
+	if err != nil {
+		panic(err)
+	}
+}
+
+func log(format string, v ...interface{}) {
+	fmt.Fprintf(logFile, format, v...)
+}
 
 type CPU struct {
 	CycleCount int
@@ -87,26 +103,26 @@ func (c *CPU) fetch() uint16 {
 
 func (c *CPU) decodeAndExecute(opcode uint16) {
 	// Decode opcode
-	fmt.Println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+	log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
 	nibble := opcode & 0xF000 // get the top 4 bits
 
-	fmt.Printf("nip: 0x%X\n", opcode)
+	//log("nip: 0x%X\n", opcode)
 	switch nibble {
 	case 0x0000:
-		// fmt.Printf("Entering 0x0000")
+		// log("Entering 0x0000")
 		switch opcode & 0x000F {
 		case 0x0000:
-			fmt.Printf("Clearing display\n")
+			log("Clearing display\n")
 			c.Display.Clear()
 			c.PC += 2
 		case 0x000E:
-			fmt.Printf("Returning from subroutine")
+			log("Returning from subroutine")
 			// Return from a subroutine
 			c.SP--
 			c.PC = c.Stack[c.SP]
 			c.PC += 2
 		default:
-			fmt.Println("Unknown opcode: 0x%X\n", opcode)
+			log("Unknown opcode: 0x%X\n", opcode)
 		}
 	case 0x1000:
 		// Jump to address NNN
@@ -230,7 +246,7 @@ func (c *CPU) decodeAndExecute(opcode uint16) {
 			c.PC += 2 // next instruction
 
 		default:
-			fmt.Printf("Unknown opcode: 0x%X\n", opcode)
+			log("Unknown opcode: 0x%X\n", opcode)
 
 		}
 	case 0x9000:
@@ -259,7 +275,7 @@ func (c *CPU) decodeAndExecute(opcode uint16) {
 		c.PC += 2 // next instruction
 
 	case 0xD000:
-		fmt.Printf("Entering Draw")
+		log("Entering Draw")
 		// Draw a sprite at coordinate (VX, VY) that has a width of 8 pixels and a height of N pixels
 		x := c.V[(opcode&0x0F00)>>8]
 		y := c.V[(opcode&0x00F0)>>4]
@@ -279,7 +295,7 @@ func (c *CPU) decodeAndExecute(opcode uint16) {
 		c.PC += 2 // next instruction
 
 	case 0xE000:
-		fmt.Printf("Entering E0")
+		log("Entering E0")
 		switch opcode & 0x00FF {
 		case 0x009E:
 			// Skip next instruction if the key stored in VX is pressed
@@ -300,7 +316,7 @@ func (c *CPU) decodeAndExecute(opcode uint16) {
 			}
 
 		default:
-			fmt.Printf("Unknown opcode: 0x%X\n", opcode)
+			log("Unknown opcode: 0x%X\n", opcode)
 
 		}
 
@@ -371,38 +387,38 @@ func (c *CPU) decodeAndExecute(opcode uint16) {
 			c.PC += 2 // next instruction
 
 		default:
-			fmt.Printf("Unknown opcode: 0x%X\n", opcode)
+			log("Unknown opcode: 0x%X\n", opcode)
 
 		}
 
 	default:
-		fmt.Printf("Unknown opcode: 0x%X\n", opcode)
+		log("Unknown opcode: 0x%X\n", opcode)
 
 	}
-	fmt.Println("Reach end of decode and execute. Exiting...")
-	fmt.Printf("Opcode: 0x%X\n", opcode)
+	//log("Reach end of decode and execute. Exiting...")
+	log("Opcode: 0x%X\n", opcode)
 	printState(c)
 	// os.Exit(1)
 	// timer update
 }
 
 func printState(c *CPU) {
-	fmt.Printf("PC: 0x%X\n", c.PC)
-	fmt.Printf("I: 0x%X\n", c.I)
-	fmt.Printf("V: %v\n", c.V)
-	fmt.Printf("DT: 0x%X\n", c.DT)
-	fmt.Printf("ST: 0x%X\n", c.ST)
+	log("PC: 0x%X\n", c.PC)
+	log("I: 0x%X\n", c.I)
+	log("V: %v\n", c.V)
+	log("DT: 0x%X\n", c.DT)
+	log("ST: 0x%X\n", c.ST)
 }
 
 func (c *CPU) Cycle(verbose bool, RAM *memory.Memory) {
 	c.CycleCount++
-	fmt.Printf("Cycle: %d\n", c.CycleCount)
-	fmt.Println("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
+	log("Cycle: %d\n", c.CycleCount)
+	log("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
 	opcode := c.fetch()
-	fmt.Printf("Opcode: 0x%X\n", opcode)
+	log("Opcode: 0x%X\n", opcode)
 	if verbose {
 		printState(c)
 	}
 	c.decodeAndExecute(opcode)
-	fmt.Printf("Exiting Decode and Execute")
+	log("Exiting Decode and Execute")
 }

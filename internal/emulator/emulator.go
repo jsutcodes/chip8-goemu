@@ -74,14 +74,23 @@ func (emu *Emulator) Run() {
 		emu.RAM.WriteByte(uint16(i), b)
 	}
 
+	// Run with : watch -n 1 "cat memory.dump | xxd -r -p | xxd"
 	emu.RAM.PrintMemoryToFile("memory.dump")
 
-	ticker := time.NewTicker(time.Second / CLOCK_SPEED)
+	var ticker *time.Ticker
+	debug := false
+	if debug {
+		ticker = time.NewTicker(10 * time.Second)
+	} else {
+		ticker = time.NewTicker(time.Second / CLOCK_SPEED)
+	}
 
 	for emu.running {
 		select {
 		case <-ticker.C:
-			fmt.Printf("Running")
+			//fmt.Printf("%d\n", emu.CPU.CycleCount)
+			//emu.CPU.CycleCount++
+			//fmt.Print("\033[H\033[2J") // clear terminal screen
 			emu.Step()
 		}
 	}
@@ -90,7 +99,7 @@ func (emu *Emulator) Run() {
 func (emu *Emulator) Step() {
 	// Run the emulator
 	emu.CPU.Cycle(false, emu.RAM)
-	emu.Timer.Update()
+	//emu.Timer.Update() // TODO: why does this cause issue??
 	emu.Display.Render()
 }
 
