@@ -1,12 +1,12 @@
 package cpu
 
 import (
+	"fmt"
 	"math/rand"
 
 	"github.com/jsutcodes/chip8-goemu/internal/display"
 	"github.com/jsutcodes/chip8-goemu/internal/input"
 	"github.com/jsutcodes/chip8-goemu/internal/memory"
-	"honnef.co/go/tools/printf"
 )
 
 type CPU struct {
@@ -100,8 +100,7 @@ func (c *CPU) decodeAndExecute(opcode uint16) {
 			c.PC = c.Stack[c.SP]
 			c.PC += 2
 			break
-		default:
-			printf.Printf("Unknown opcode: 0x%X\n", opcode)
+			fmt.Printf("Unknown opcode: 0x%X\n", opcode)
 			break
 		}
 	case 0x1000:
@@ -235,7 +234,7 @@ func (c *CPU) decodeAndExecute(opcode uint16) {
 			break
 
 		default:
-			printf.Printf("Unknown opcode: 0x%X\n", opcode)
+			fmt.Printf("Unknown opcode: 0x%X\n", opcode)
 			break
 		}
 	case 0x9000:
@@ -303,7 +302,7 @@ func (c *CPU) decodeAndExecute(opcode uint16) {
 			break
 
 		default:
-			printf.Printf("Unknown opcode: 0x%X\n", opcode)
+			fmt.Printf("Unknown opcode: 0x%X\n", opcode)
 			break
 		}
 		break
@@ -375,12 +374,12 @@ func (c *CPU) decodeAndExecute(opcode uint16) {
 			break
 
 		default:
-			printf.Printf("Unknown opcode: 0x%X\n", opcode)
+			fmt.Printf("Unknown opcode: 0x%X\n", opcode)
 			break
 		}
 
 	default:
-		printf.Printf("Unknown opcode: 0x%X\n", opcode)
+		fmt.Printf("Unknown opcode: 0x%X\n", opcode)
 	}
 
 	// timer update
@@ -391,17 +390,17 @@ func (c *CPU) decodeAndExecute(opcode uint16) {
 // }
 
 func printState(c *CPU) {
-	printf.Printf("PC: 0x%X\n", c.PC)
-	printf.Printf("I: 0x%X\n", c.I)
-	printf.Printf("V: %v\n", c.V)
-	printf.Printf("DT: 0x%X\n", c.DT)
-	printf.Printf("ST: 0x%X\n", c.ST)
+	fmt.Printf("PC: 0x%X\n", c.PC)
+	fmt.Printf("I: 0x%X\n", c.I)
+	fmt.Printf("V: %v\n", c.V)
+	fmt.Printf("DT: 0x%X\n", c.DT)
+	fmt.Printf("ST: 0x%X\n", c.ST)
 }
 
 func (c *CPU) Cycle(verbose bool, RAM *memory.Memory) {
 
 	opcode := c.fetch()
-	printf.Printf("Opcode: 0x%X\n", opcode)
+	fmt.Printf("Opcode: 0x%X\n", opcode)
 	if verbose {
 		printState(c)
 	}
