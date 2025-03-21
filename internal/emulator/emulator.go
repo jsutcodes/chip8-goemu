@@ -43,13 +43,20 @@ type Emulator struct {
 	Timer   *timer.Timer
 }
 
+func (emu *Emulator) Test() {
+	// Test IBM Logo
+	emu.CPU.Cycle(true, emu.RAM)
+
+}
+
 func NewEmulator() *Emulator {
 	ram := memory.NewMemory()
 	display := display.NewDisplay()
+	keypad := input.NewKeypad()
 	return &Emulator{
 		RAM:     ram,
-		CPU:     cpu.NewCPU(ram, display),
-		Input:   input.NewKeypad(),
+		CPU:     cpu.NewCPU(ram, display, keypad),
+		Input:   keypad,
 		Display: display,
 		Timer:   timer.NewTimer(),
 	}

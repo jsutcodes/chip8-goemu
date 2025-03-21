@@ -100,8 +100,8 @@ func (c *CPU) decodeAndExecute(opcode uint16) {
 			c.PC = c.Stack[c.SP]
 			c.PC += 2
 			break
+		default:
 			fmt.Printf("Unknown opcode: 0x%X\n", opcode)
-			break
 		}
 	case 0x1000:
 		// Jump to address NNN
